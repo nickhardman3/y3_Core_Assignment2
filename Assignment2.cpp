@@ -53,7 +53,7 @@ vector<int> extract_local_grid(const vector<int>& global_grid, int N, int local_
     {
         for (int j = 0; j < N; j++)
         {
-            local_data[i * N + j] = global_grid[(localStart + i) * N + j]; //row of data from global grid is copied into the local grid
+            local_data[i * N + j] = global_grid[(local_start + i) * N + j]; //row of data from global grid is copied into the local grid
         }
     }
     return local_data;
@@ -103,7 +103,7 @@ vector<vector<int>> generate_local_grid(int local_rows, int N, double p) //gener
 
 void ignite_top_row(vector<vector<int>> &local_grid, int local_start) //top row of trees are set on fire (1 --> 2)
 {
-    if (localStart == 0 && !local_grid.empty())
+    if (local_start == 0 && !local_grid.empty())
     {
         int cols = local_grid[0].size();
         for (int j = 0; j < cols; j++)
@@ -220,10 +220,10 @@ int main(int argc, char** argv)
     }
     if (argc >= 6)
     {
-        init_filename = argv[5];
+        initFilename = argv[5];
         M = 1;
     }
-    bool has_input_file = !init_filename.empty(); //variables for tracking performance
+    bool has_input_file = !initFilename.empty(); //variables for tracking performance
     bool is_conv_mode = (mode == "conv");
     double total_steps = 0.0;
     double total_time = 0.0;
@@ -273,7 +273,7 @@ int main(int argc, char** argv)
             vector<int> global_grid_flat;
             if (rank == 0)
             {
-                global_grid_flat = read_grid_from_file(init_filename, N);
+                global_grid_flat = read_grid_from_file(initFilename, N);
             }
             MPI_Bcast(&N, 1, MPI_INT, 0, MPI_COMM_WORLD);
             if (rank != 0)
@@ -384,7 +384,7 @@ int main(int argc, char** argv)
     }
     if (rank == 0) //process 0 outputs simulation stats and writes the final grid to a file
     {
-        int runs_done = (has_input_file ? 1 : run_count);
+        int runs_done = (has_input_file ? 1 : run_count - 1);
         double avg_steps = (runs_done > 0) ? (total_steps / runs_done) : 0.0;
         double avg_time = (runs_done > 0) ? (total_time / runs_done) : 0.0;
         double reach_percent = (runs_done > 0) ? (double)total_reached * 100.0 / runs_done : 0.0;
@@ -412,7 +412,7 @@ int main(int argc, char** argv)
             {
                 for (int j = 0; j < N; j++)
                 {
-                    out_file << final_global_data[i * N + j] << " ";
+                    outFile << final_global_data[i * N + j] << " ";
                 }
                 outFile << "\n";
             }
