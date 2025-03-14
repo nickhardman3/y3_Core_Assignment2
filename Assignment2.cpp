@@ -215,16 +215,16 @@ int main(int argc, char** argv)
     int M = 1; //default number of runs
     string mode = "normal"; //mode: "normal" or "conv"
     string initFilename = "";
-    string printSteps = "no"; //option to print the list of step counts at the end ("yes" or "no")
-    //usage (no input file): mpirun -np <P> ./A2 N p M mode printSteps
-    //usage (with input file): mpirun -np <P> ./A2 N p M mode initFilename printSteps
+    string print_steps = "no"; //option to print the list of step counts at the end ("yes" or "no")
+    //usage (no input file): mpirun -np <P> ./A2 N p M mode print_steps
+    //usage (with input file): mpirun -np <P> ./A2 N p M mode initFilename print_steps
     if (argc >= 6 && argc < 7)
     {
         N = atoi(argv[1]);
         p = atof(argv[2]);
         M = atoi(argv[3]);
         mode = argv[4];
-        printSteps = argv[5];
+        print_steps = argv[5];
     }
     else if (argc >= 7)
     {
@@ -233,7 +233,7 @@ int main(int argc, char** argv)
         M = atoi(argv[3]);
         mode = argv[4];
         initFilename = argv[5];
-        printSteps = argv[6];
+        print_steps = argv[6];
         M = 1; //only one run if input file
     }
     bool has_input_file = !initFilename.empty();
@@ -244,7 +244,7 @@ int main(int argc, char** argv)
     vector<int> final_global_data;
     int run_count = 0;
     double old_avg_steps = 0.0;
-    double tolerance = 1e-5;
+    double tolerance = 0.0005;
     bool converged = false;
     int max_runs = 50000;
     vector<int> forest_run_steps; //record steps for each forest run
@@ -373,12 +373,12 @@ int main(int argc, char** argv)
             total_reached += (reached_bottom ? 1 : 0);
             forest_run_steps.push_back(steps); //record this run's step count
         }
-        if (is_conv_mode && !has_input_file && rank == 0 && run_count >= 5) //checks the convergence criteria in convergence mode
+        if (is_conv_mode && !has_input_file && rank == 0 && run_count >= 10) //checks the convergence criteria in convergence mode
         {
             double new_avg_steps = total_steps / run_count;
             double diff = fabs(new_avg_steps - old_avg_steps);
             old_avg_steps = new_avg_steps;
-            if (diff < 1e-5)
+            if (diff < 0.0005)
             {
                 converged = true;
             }
@@ -399,8 +399,8 @@ int main(int argc, char** argv)
     }
     if (rank == 0) //final output and file writing 
     {
-        int runs_done = (has_input_file ? 1 : run_count - 1);
-        if (printSteps == "yes")
+        int runs_done = (has_input_file ? 1 : run_count -1);
+        if (print_steps == "yes")
         {
             for (size_t i = 0; i < forest_run_steps.size(); i++) //prints only the list of step count
                 cout << forest_run_steps[i] << "\n";
@@ -410,6 +410,10 @@ int main(int argc, char** argv)
             double avg_steps = (runs_done > 0) ? (total_steps / runs_done) : 0.0; //calculates the average steps, average time, and the percentage of runs reaching the bottom
             double avg_time = (runs_done > 0) ? (total_time / runs_done) : 0.0;
             double reach_percent = (runs_done > 0) ? (double)total_reached * 100.0 / runs_done : 0.0;
+            if (reach_percent > 100)
+            {
+                (reach_percent) = 100;
+            }
             if (has_input_file)
             {
                 cout << "\n[Single-Run: File Provided]\n";
